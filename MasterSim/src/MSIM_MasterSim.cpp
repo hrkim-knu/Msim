@@ -24,6 +24,10 @@
 #include "MSIM_AlgorithmGaussSeidel.h"
 #include "MSIM_AlgorithmNewton.h"
 
+// hrkim
+#include <iostream>
+#include <omp.h>
+
 namespace MASTER_SIM {
 
 MasterSim::MasterSim() :
@@ -182,6 +186,12 @@ void MasterSim::simulate() {
 	//     m_hProposed            = 0.001
 	//     m_project.m_tEnd.value = 1.0
 	//     -> Take step, but adjust m_hProposed to hit exactly tEnd
+	// hrkim
+	// #pragma omp parallel
+	// {
+		// {
+			
+	// #pragma omp single
 	while (m_t < m_project.m_tEnd.value) {
 		double hRemaining = m_project.m_tEnd.value - m_t;
 		if (hRemaining < m_hProposed) {
@@ -195,21 +205,28 @@ void MasterSim::simulate() {
 				m_hProposed = hRemaining;
 			}
 		}
-
 		// Do an internal step with the selected master algorithm
+		// #pragma omp task
 		doStep();
-		++m_statStepCounter;
 
+		++m_statStepCounter;
+		
 		if (m_args.m_verbosityLevel > 1)
 			writeStepStatistics();
+		
 
 		// Now the master's internal state has moved to the next time point m_t = m_t + m_h
 		// m_h holds the step size used during the last master step
-
+		
 		if (m_t < m_project.m_tEnd.value) {
 			appendOutputs();// appends outputs (filtering/scheduling is implemented inside OutputWriter class)
 		}
+
 	}
+	// hrkim single end brance
+// }
+	// hrkim prarallel end brace
+// }
 	// write final results
 
 	// ensure, that final results are definitely written, but only if the last output time is not already
@@ -246,18 +263,38 @@ void MasterSim::doStep() {
 		// request state from all slaves
 		storeCurrentSlaveStates(m_iterationStates);
 	}
-
+	// std::cout << "hrkim debug in dostep() - 1" <<std::endl;
+	
+	// hrkim
+	volatile static int cnt = 0;
 	// step size reduction loop
+	// std::cout << "hrkim debug in dostep() - 1" <<std::endl;
 	while (true) {
 
 		// let master do one step
 		m_timer.start();
+		
+	const char * const FUNC_ID = "[MasterSim::doStep]";
+
+	// state of master and fmus at this point:
+	// - all FMUs and their outputs correspond to master time t
+	// - m_hProposed holds suggested time step size for next step
+	// - m_h holds time step size of _last_ completed step
+
+	m_h = m_hProposed; // set proposed time step size
+	//hrkim
+
 		AbstractAlgorithm::Result res = m_masterAlgorithm->doStep();
+
 		// states:
 		//   m_XXXyt     -> still values at time point t
 		//   m_XXXytNext -> values at time point t + h
 		++m_statAlgorithmCallCounter;
 		m_statAlgorithmTime += m_timer.stop()*1e-3;
+		// hrkim
+		// std::cout << cnt++ << " - Stacked Time. : " << m_statAlgorithmTime << std::endl;
+		// std::cout << "Result of doStep : " << res << std::endl;
+		
 		switch (res) {
 			case AbstractAlgorithm::R_CONVERGED :
 				break;
@@ -268,6 +305,7 @@ void MasterSim::doStep() {
 														"Reduction of time step is not enabled, continuing with "
 														"potentially inaccurate values.")
 														 .arg(m_t).arg(m_h),IBK::MSG_WARNING, FUNC_ID, IBK::VL_INFO);
+
 					break;
 				}
 				/* fall through */
@@ -306,6 +344,7 @@ void MasterSim::doStep() {
 				break;
 		}
 	}
+	// std::cout << "hrkim debug in dostep() - 2" <<std::endl;
 
 
 	// transfer computed results at end of iteration

@@ -108,6 +108,16 @@ else (Qt5Widgets_INCLUDE_DIRS)
 
 endif (Qt5Widgets_INCLUDE_DIRS)
 
+#hrkim start
+find_package(OpenMP REQUIRED)
+
+if(OpenMP_CXX_FOUND)
+    message(STATUS "OpenMP found, enabling parallelism")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+endif()
+#hrkim end
+
 if( APPLE )
 	find_library(IOKIT NAMES IOKit REQUIRED)
 	find_library(SYSTEM_CONFIGURATION SystemConfiguration REQUIRED)

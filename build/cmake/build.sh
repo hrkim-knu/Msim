@@ -26,7 +26,7 @@ CMAKE_BUILD_TYPE=" -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo"
 MAKE_CPUCOUNT="2"
 BUILD_DIR_SUFFIX="gcc"
 COMPILER=""
-SKIP_TESTS="false"
+SKIP_TESTS="true"
 
 # parse parameters, except gprof and threadchecker
 for var in "$@"

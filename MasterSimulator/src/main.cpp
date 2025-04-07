@@ -13,6 +13,9 @@
 #include <MSIM_ArgParser.h>
 #include <MSIM_Constants.h>
 
+// hrkim
+#include <thread>
+
 void setupLogFile(const MASTER_SIM::ArgParser & parser);
 
 int main(int argc, char * argv[]) {
@@ -23,7 +26,6 @@ int main(int argc, char * argv[]) {
 #endif
 
 	IBK::WaitOnExit wait;
-
 	try {
 		// parse command line
 		MASTER_SIM::ArgParser parser; // configuration of help/man output is done in constructor
@@ -91,10 +93,16 @@ int main(int argc, char * argv[]) {
 		// adjust log-file message handler to log only standard level outputs (unless user specified higher level)
 		IBK::MessageHandlerRegistry::instance().messageHandler()->setConsoleVerbosityLevel( std::max<int>(IBK::VL_STANDARD, (int)parser.m_verbosityLevel));
 		IBK::MessageHandlerRegistry::instance().messageHandler()->setLogfileVerbosityLevel( std::max<int>(IBK::VL_STANDARD, (int)parser.m_verbosityLevel));
+		
+
 
 		// let master run the simulation until end
 		masterSim.simulate();
+		// hrkim : simulate with std::thread
+		// std::thread simThread(&MASTER_SIM::MasterSim::simulate, &masterSim);
+		// simThread.join(); // hrkim : wait until the end of simulate()
 
+		
 		// print final statistics
 		masterSim.writeMetrics();
 
